@@ -1,0 +1,229 @@
+## RBA main task create from OnBoarding subtask with " RBA Request " issue picker field
+
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.crowd.embedded.api.Group
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.issue.IssueFactory
+import com.atlassian.jira.config.PriorityManager
+import com.atlassian.jira.event.type.EventDispatchOption
+
+int schemaId = 25
+String rbaTask = "RBA"
+
+ApplicationUser user = ComponentAccessor.jiraAuthenticationContext.loggedInUser
+def issueManager = ComponentAccessor.issueManager
+def newIssue = ComponentAccessor.issueFactory.issue
+def optionsManager = ComponentAccessor.getOptionsManager()
+def customFieldManager = ComponentAccessor.getCustomFieldManager()
+def priorities = ComponentAccessor.getComponent(PriorityManager).priorities
+def iAssignmentGroupCF = customFieldManager.getCustomFieldObjectsByName("Assignment Group")[0]
+def iAssignmentGroupValues = issue.getCustomFieldValue(iAssignmentGroupCF)
+def objectFacade = ComponentAccessor.getOSGiComponentInstanceOfType(ComponentAccessor.getPluginAccessor().getClassLoader().findClass("com.riadalabs.jira.plugins.insight.channel.external.api.facade.ObjectFacade"));
+
+def groupObject = iAssignmentGroupValues[0]
+
+def groupNameAttribute = objectFacade.loadObjectAttributeBean(groupObject.id, "Group Name")
+def groupNameAttributeValues = groupNameAttribute.getObjectAttributeValueBeans()
+
+String groupName = groupNameAttributeValues[0].value as String
+def assignmentGroupCF = customFieldManager.getCustomFieldObjectsByName("Internal Assignment Group")[0]
+
+def groupManager = ComponentAccessor.getGroupManager()
+Group group = groupManager.getGroup(groupName)
+issue.setCustomFieldValue(assignmentGroupCF, [group]);
+
+def groupManagerCF = customFieldManager.getCustomFieldObjectsByName("Group Manager")[0] // "Group Manager"
+
+def managerAttribute = objectFacade.loadObjectAttributeBean(groupObject.id, "Manager")
+def managerAttributeValues = managerAttribute.getObjectAttributeValueBeans()
+def manager = managerAttributeValues[0].value
+log.warn("manager check");
+if(manager) {
+    def userNameAttribute = objectFacade.loadObjectAttributeBean(manager, "User Name")
+    def userNameAttributeValues = userNameAttribute.getObjectAttributeValueBeans()
+    String userName = userNameAttributeValues[0].value
+
+    if(userName) {
+        def userManager = ComponentAccessor.userManager
+        def managerUser = userManager.getUserByName(userName)
+        issue.setCustomFieldValue(groupManagerCF, managerUser)
+    }
+}
+
+def issueContextCF = customFieldManager.getCustomFieldObjectsByName("Issue Context")[0]
+String issueContext = issue.getCustomFieldValue(issueContextCF) as String
+
+if(rbaTask.equals(issueContext)) {
+    def associateNameCF = customFieldManager.getCustomFieldObjectsByName("Associate name")[0]
+    String associateName = issue.getCustomFieldValue(associateNameCF) as String
+    
+    def associateNameICF = customFieldManager.getCustomFieldObject("customfield_12707")
+    
+    def DivisionCF = customFieldManager.getCustomFieldObjectsByName("Division")[0]
+    def LocationCF = customFieldManager.getCustomFieldObject("customfield_12718") //12718Location
+    def CompanyCF = customFieldManager.getCustomFieldObjectsByName("Company")[0]
+    def Associatecf = customFieldManager.getCustomFieldObjectsByName("Associate")[0]
+    def AssociateIDcf = customFieldManager.getCustomFieldObjectsByName("Associate ID")[0]
+    def EmailIDcf = customFieldManager.getCustomFieldObjectsByName("Email ID")[0]
+    def ManagerSystemDomaincf = customFieldManager.getCustomFieldObjectsByName("Manager System Domain")[0]
+    def phonetypecf = customFieldManager.getCustomFieldObjectsByName("Phone Type")[0]
+    def departmentcf = customFieldManager.getCustomFieldObject("customfield_12717")
+    def phonenumbercf = customFieldManager.getCustomFieldObjectsByName("Phone Number")[0]
+    def phonemodelcf = customFieldManager.getCustomFieldObjectsByName("Phone Model")[0]
+    def tokennocf = customFieldManager.getCustomFieldObjectsByName("Token Number")[0]
+    def badgenocf = customFieldManager.getCustomFieldObjectsByName("Badge Number")[0]
+    def faxnocf = customFieldManager.getCustomFieldObjectsByName("Fax Number")[0]
+    def pcnamecf = customFieldManager.getCustomFieldObjectsByName("PC Name")[0]
+    def macaddresscf = customFieldManager.getCustomFieldObjectsByName("MAC Address")[0]
+    def titlcf = customFieldManager.getCustomFieldObjectsByName("Title")[0]
+    def hiredateocf = customFieldManager.getCustomFieldObject("customfield_11605")
+    def emptypecf = customFieldManager.getCustomFieldObjectsByName("Employment Type")[0]
+    def companyidcf = customFieldManager.getCustomFieldObject("customfield_12715")
+    def lineofbussinesscf = customFieldManager.getCustomFieldObject("customfield_12716")
+    def fullorparttimecf = customFieldManager.getCustomFieldObjectsByName("Full/Part Time")[0]
+    def primaryrolecf = customFieldManager.getCustomFieldObjectsByName("Primary Role")[0]
+    def contractEndDatecf = customFieldManager.getCustomFieldObjectsByName("Contract End Date")[0]
+    def domainFIDcf = customFieldManager.getCustomFieldObject("customfield_12706")
+    def docsVerifiedcF = customFieldManager.getCustomFieldObjectsByName("Are Documents Verified?")[0]
+    def solutionFcf = customFieldManager.getCustomFieldObjectsByName("Solution")[0]
+    def actualLocationFcf = customFieldManager.getCustomFieldObjectsByName("Actual Location")[0]
+    def rollcf = customFieldManager.getCustomFieldObjectsByName("Roll Up")[0]
+    def agencycf = customFieldManager.getCustomFieldObjectsByName("Agency Name")[0]
+    def functioncf = customFieldManager.getCustomFieldObjectsByName("Function")[0]
+    def primaryemailcf = customFieldManager.getCustomFieldObjectsByName("Primary Email")[0]
+    def rehirecf = customFieldManager.getCustomFieldObjectsByName("Rehire")[0]
+    def managerCF = customFieldManager.getCustomFieldObjectsByName("Manager")[0]
+    def rbaRequestCF = customFieldManager.getCustomFieldObjectsByName("RBA Request")[0]
+    def hiringManagerCF = customFieldManager.getCustomFieldObjectsByName("Hiring Manager")[0]
+	def userNameCF = customFieldManager.getCustomFieldObject("customfield_11602")
+	def managerNameCF = customFieldManager.getCustomFieldObject("customfield_12729")
+    
+    String Division = issue.getCustomFieldValue(DivisionCF) as String
+    String Location = issue.getCustomFieldValue(LocationCF) as String
+    String Company = issue.getCustomFieldValue(CompanyCF) as String
+    String Associate = issue.getCustomFieldValue(Associatecf) as String
+    String AssociateID = issue.getCustomFieldValue(AssociateIDcf) as String
+    String EmailID = issue.getCustomFieldValue(EmailIDcf) as String
+    String ManagerSystemDomain = issue.getCustomFieldValue(ManagerSystemDomaincf) as String
+    String phonetype = issue.getCustomFieldValue(phonetypecf) as String
+    String department = issue.getCustomFieldValue(departmentcf) as String
+    String phonenumber = issue.getCustomFieldValue(phonenumbercf) as String
+    String phonemodel = issue.getCustomFieldValue(phonemodelcf) as String
+    String tokenno = issue.getCustomFieldValue(tokennocf) as String
+    String badgeno = issue.getCustomFieldValue(badgenocf) as String
+    String faxno = issue.getCustomFieldValue(faxnocf) as String
+    String pcname = issue.getCustomFieldValue(pcnamecf) as String
+    String macaddress = issue.getCustomFieldValue(macaddresscf) as String
+    String titl = issue.getCustomFieldValue(titlcf) as String
+    String hiredateo = issue.getCustomFieldValue(hiredateocf) as String
+    String emptype = issue.getCustomFieldValue(emptypecf) as String
+    String companyid = issue.getCustomFieldValue(companyidcf) as String
+    String lineofbussiness = issue.getCustomFieldValue(lineofbussinesscf) as String
+    String fullorparttime = issue.getCustomFieldValue(fullorparttimecf) as String
+    String primaryrole = issue.getCustomFieldValue(primaryrolecf) as String
+    String contractEndDate = issue.getCustomFieldValue(contractEndDatecf) as String
+    String domainFID = issue.getCustomFieldValue(domainFIDcf) as String
+    String docsVerified = issue.getCustomFieldValue(docsVerifiedcF) as String
+    String solutionF = issue.getCustomFieldValue(solutionFcf) as String
+    String actualLocationF = issue.getCustomFieldValue(actualLocationFcf) as String
+    String roll = issue.getCustomFieldValue(rollcf) as String
+    String agency = issue.getCustomFieldValue(agencycf) as String
+    String function = issue.getCustomFieldValue(functioncf) as String
+    String primaryemail = issue.getCustomFieldValue(primaryemailcf) as String
+    String rehire = issue.getCustomFieldValue(rehirecf) as String
+    String userNameText = issue.getCustomFieldValue(userNameCF) as String
+	String managerNameText = issue.getCustomFieldValue(managerNameCF) as String
+
+    log.warn("Associate name : ${associateName}")
+   	def associateNameI = issue.getCustomFieldValue(associateNameICF)
+    String hiringManager = ""
+
+    Class iqlFacadeClass = ComponentAccessor.getPluginAccessor().getClassLoader().loadClass("com.riadalabs.jira.plugins.insight.channel.external.api.facade.IQLFacade")
+    def iqlFacade = ComponentAccessor.getOSGiComponentInstanceOfType(iqlFacadeClass)
+    newIssue.setProjectId(issue.projectId)
+    newIssue.setIssueTypeId("11105")
+    newIssue.setReporterId(issue.reporterId)
+	String name = ""
+    if(managerCF) {
+       try {    
+		String managerUserName = (issue.getCustomFieldValue(managerCF) as ApplicationUser).getName().toString()
+		if(managerUserName) {
+			def userObjects = iqlFacade.findObjectsByIQLAndSchema(schemaId, "objectType = Users AND \"User Name\" = \"" + managerUserName + "\"")
+				if(userObjects == null || userObjects.isEmpty()) {
+					String emailAddress = (issue.getCustomFieldValue(managerCF) as ApplicationUser).getEmailAddress()
+					userObjects = iqlFacade.findObjectsByIQLAndSchema(schemaId, "objectType = Users AND \"Email Address\" = \"" + emailAddress + "\"")
+				}
+			log.warn(userObjects)
+			if(!userObjects.isEmpty()) {
+				def nameAttribute = objectFacade.loadObjectAttributeBean(userObjects[0].id, "Display Name")
+				def nameAttributeValues = nameAttribute.getObjectAttributeValueBeans()
+				name = nameAttributeValues[0].value
+				newIssue.setCustomFieldValue(hiringManagerCF, userObjects)
+			}
+		}
+		} catch (Exception err) {
+            log.warn("Could not get manager value" + err.getMessage());
+        }  
+    }
+   
+    newIssue.setCustomFieldValue(associateNameICF, associateNameI)
+    newIssue.setCustomFieldValue(associateNameCF, associateName)
+	newIssue.setCustomFieldValue(rbaRequestCF, issue)
+    newIssue.setCustomFieldValue(DivisionCF, Division)
+    newIssue.setCustomFieldValue(LocationCF, Location)
+    newIssue.setCustomFieldValue(CompanyCF, Company)
+    
+    newIssue.setCustomFieldValue(AssociateIDcf, AssociateID)
+    newIssue.setCustomFieldValue(EmailIDcf, EmailID)
+    def ManagerSystemDomainfieldConfig = ManagerSystemDomaincf.getRelevantConfig(issue)
+    def ManagerSystemDomainoption = optionsManager.getOptions(ManagerSystemDomainfieldConfig).find {it.value == ManagerSystemDomain}
+    newIssue.setCustomFieldValue(ManagerSystemDomaincf, ManagerSystemDomainoption)
+    def phonetypefieldConfig = phonetypecf.getRelevantConfig(issue)
+    def phonetypeoption = optionsManager.getOptions(phonetypefieldConfig).find {it.value == phonetype}
+    newIssue.setCustomFieldValue(phonetypecf, phonetypeoption)
+    newIssue.setCustomFieldValue(departmentcf, department)
+    newIssue.setCustomFieldValue(phonenumbercf, phonenumber)
+    newIssue.setCustomFieldValue(phonemodelcf, phonemodel)
+    newIssue.setCustomFieldValue(tokennocf, tokenno)
+    newIssue.setCustomFieldValue(badgenocf, badgeno)
+    newIssue.setCustomFieldValue(faxnocf, faxno)
+    newIssue.setCustomFieldValue(pcnamecf, pcname)
+    newIssue.setCustomFieldValue(macaddresscf, macaddress)
+    newIssue.setCustomFieldValue(titlcf, titl)
+    newIssue.setCustomFieldValue(hiredateocf, hiredateo)
+    def emptypefieldConfig = emptypecf.getRelevantConfig(issue)
+    def emptypeoption = optionsManager.getOptions(emptypefieldConfig).find {it.value == emptype}
+    newIssue.setCustomFieldValue(emptypecf, emptypeoption)
+    def companyidfieldConfig = companyidcf.getRelevantConfig(issue)
+    def companyidoption = optionsManager.getOptions(companyidfieldConfig).find {it.value == companyid}
+    newIssue.setCustomFieldValue(companyidcf, companyidoption)
+    newIssue.setCustomFieldValue(lineofbussinesscf, lineofbussiness)
+    newIssue.setCustomFieldValue(fullorparttimecf, fullorparttime)
+	newIssue.setCustomFieldValue(primaryrolecf, primaryrole)
+    newIssue.setCustomFieldValue(contractEndDatecf, contractEndDate )
+    def domainFIDfieldConfig = domainFIDcf.getRelevantConfig(issue)
+    def domainFIDoption = optionsManager.getOptions(domainFIDfieldConfig).find {it.value == domainFID}
+    newIssue.setCustomFieldValue(domainFIDcf, domainFIDoption)
+    def docsVerifiedfieldConfig = docsVerifiedcF.getRelevantConfig(issue)
+    def docsVerifiedoption = optionsManager.getOptions(docsVerifiedfieldConfig).find {it.value == docsVerified}
+    newIssue.setCustomFieldValue(docsVerifiedcF, docsVerifiedoption)
+    newIssue.setCustomFieldValue(solutionFcf, solutionF)   
+    newIssue.setCustomFieldValue(rollcf, roll)
+    newIssue.setCustomFieldValue(agencycf, agency)
+    newIssue.setCustomFieldValue(functioncf, function)
+    newIssue.setCustomFieldValue(primaryemailcf, primaryemail)
+    def rehirecfieldConfig = rehirecf.getRelevantConfig(issue)
+    def rehirecfoption = optionsManager.getOptions(rehirecfieldConfig).find {it.value == rehire}
+    newIssue.setCustomFieldValue(rehirecf, rehirecfoption)
+    newIssue.setCustomFieldValue(userNameCF, userNameText)
+    newIssue.setCustomFieldValue(managerNameCF, managerNameText)
+	newIssue.setCustomFieldValue(managerCF, issue.getCustomFieldValue(managerCF))
+    newIssue.setPriorityId(priorities.findByName("Priority 4").id)
+    issueManager.createIssueObject(user, newIssue)
+    
+    issue.setDescription("RBA Request : ${newIssue.key}\n\nHiring Manager : ${name}")
+    issue.setCustomFieldValue(rbaRequestCF, newIssue)
+}
+
+
