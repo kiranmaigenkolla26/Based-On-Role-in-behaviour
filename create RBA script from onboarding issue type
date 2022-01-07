@@ -1,0 +1,87 @@
+## Update parameters of the Script Post-Function [ScriptRunner] Function for this transition.
+## Update parameters of the Script Post-Function [ScriptRunner] Function for this transition.
+## Create a sub-task
+## Create a sub-task. Will optionally reopen a matching sub-task.
+## condition : //RBA Task
+def rehireOption = cfValues["Rehire"]
+return "No".equals(rehireOption.value)
+
+## Target Issue Type : OnBoarding/Rehire Subtask
+
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.customfields.option.Option
+import com.atlassian.jira.config.PriorityManager
+
+final int schemaId = 25
+final String task = "RBA"
+final String fulfillmentTask = "Fulfilment Task - "
+
+def issueContextCF = customFieldManager.getCustomFieldObjectsByName("Issue Context")[0]
+def impactCF = customFieldManager.getCustomFieldObject(10104l)   //sByName("Impact")[0]
+def urgencyCF = customFieldManager.getCustomFieldObjectsByName("Urgency")[0]
+
+String associateF = "Associate"
+String associateNameIF = "customfield_12707"
+def associateCF = customFieldManager.getCustomFieldObjectsByName(associateF)[0]
+def associateNameICF = customFieldManager.getCustomFieldObject(associateNameIF)
+
+issue.setCustomFieldValue(associateCF, sourceIssue.getCustomFieldValue(associateCF))
+issue.setCustomFieldValue(associateNameICF, sourceIssue.getCustomFieldValue(associateNameICF))
+def priorities = ComponentAccessor.getComponent(PriorityManager).priorities
+def optionsManager = ComponentAccessor.optionsManager
+
+def fieldConfig = impactCF.getRelevantConfig(issue)
+def option = optionsManager.getOptions(fieldConfig).getOptionForValue("Low", null)
+issue.setCustomFieldValue(impactCF, option)
+
+fieldConfig = urgencyCF.getRelevantConfig(issue)
+option = optionsManager.getOptions(fieldConfig).getOptionForValue("Low", null)
+issue.setCustomFieldValue(urgencyCF, option)
+
+issue.setPriorityId(priorities.findByName("Priority 4").id)
+
+String group = "HR coordinators Group"
+
+issue.setSummary("${fulfillmentTask}Below are the details of RBA")
+issue.setCustomFieldValue(issueContextCF, task)
+
+Class iqlFacadeClass = ComponentAccessor.getPluginAccessor().getClassLoader().findClass("com.riadalabs.jira.plugins.insight.channel.external.api.facade.IQLFacade")
+def iqlFacade = ComponentAccessor.getOSGiComponentInstanceOfType(iqlFacadeClass)
+
+def objects = iqlFacade.findObjectsByIQLAndSchema(schemaId, "objectType = Groups AND \"Group Name\" = \"${group}\"")
+if (!objects.isEmpty()) {
+	def insightAssignmentGroupCf = customFieldManager.getCustomFieldObjectsByName("Assignment Group")[0]
+	issue.setCustomFieldValue(insightAssignmentGroupCf, objects)
+}
+
+String companyIDF = "customfield_12715"
+def companyCF = customFieldManager.getCustomFieldObject(companyIDF)
+issue.setCustomFieldValue(companyCF, sourceIssue.getCustomFieldValue(companyCF))
+
+String departmentIDF = "customfield_12717"
+def departmentCF = customFieldManager.getCustomFieldObject(departmentIDF)
+issue.setCustomFieldValue(departmentCF, sourceIssue.getCustomFieldValue(departmentCF))
+
+String domainIDF = "customfield_12706"
+def domainCF = customFieldManager.getCustomFieldObject(domainIDF)
+issue.setCustomFieldValue(domainCF, sourceIssue.getCustomFieldValue(domainCF))
+
+String lofIDF = "customfield_12716"
+def lofCF = customFieldManager.getCustomFieldObject(lofIDF)
+issue.setCustomFieldValue(lofCF, sourceIssue.getCustomFieldValue(lofCF))
+
+String locationIDF = "customfield_12718"
+def locationCF = customFieldManager.getCustomFieldObject(locationIDF)
+issue.setCustomFieldValue(locationCF, sourceIssue.getCustomFieldValue(locationCF))
+
+String requestedForIDF = "customfield_12787"
+def requestedForCF = customFieldManager.getCustomFieldObject(requestedForIDF)
+issue.setCustomFieldValue(requestedForCF, sourceIssue.getCustomFieldValue(requestedForCF))
+
+String sourceIDF = "customfield_10113"
+def sourceCF = customFieldManager.getCustomFieldObject(sourceIDF)
+issue.setCustomFieldValue(sourceCF, sourceIssue.getCustomFieldValue(sourceCF))
+
+String userNameIDF = "customfield_11602"
+def userNameCF = customFieldManager.getCustomFieldObject(userNameIDF)
+issue.setCustomFieldValue(userNameCF, sourceIssue.getCustomFieldValue(userNameCF))
