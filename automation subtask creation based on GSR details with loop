@@ -1,0 +1,100 @@
+import com.atlassian.jira.component.ComponentAccessor;
+import com.atlassian.jira.issue.ModifiedValue;
+import com.atlassian.jira.issue.util.DefaultIssueChangeHolder
+import com.atlassian.jira.bc.issue.IssueService
+import com.atlassian.jira.issue.IssueInputParameters
+import com.atlassian.jira.issue.MutableIssue
+import com.atlassian.jira.issue.IssueFactory
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.issue.fields.FieldManager
+
+//def issue = ComponentAccessor.getIssueManager().getIssueObject("IT-12668")
+
+Class objectFacadeClass = ComponentAccessor.getPluginAccessor().getClassLoader().loadClass("com.riadalabs.jira.plugins.insight.channel.external.api.facade.ObjectFacade");
+def objectFacade = ComponentAccessor.getOSGiComponentInstanceOfType(objectFacadeClass);
+Class iqlFacadeClass = ComponentAccessor.getPluginAccessor().getClassLoader().loadClass("com.riadalabs.jira.plugins.insight.channel.external.api.facade.IQLFacade")
+def iqlFacade = ComponentAccessor.getOSGiComponentInstanceOfType(iqlFacadeClass)
+def roleTitleObj = ComponentAccessor.getCustomFieldManager().getCustomFieldObjectsByName("Role")[0];
+def insightObj = issue.getCustomFieldValue(roleTitleObj)
+def objects = iqlFacade.findObjectsByIQLAndSchema(25, "\"Key\" = \"" + insightObj[0].getObjectKey() +"\"")// "\"" + attributeUserID + "\" = \"
+log.warn(insightObj[0].getObjectKey())
+
+def Genericreq = objectFacade.loadObjectAttributeBean(objects[0].getId(), "Generic Service Request")
+log.warn("Generic:" + Genericreq.getObjectAttributeValueBeans()[0].getValue())
+def genericReq = Genericreq.getObjectAttributeValueBeans()[0].getValue().toString();
+def assignGrp = new ArrayList()
+
+for(req in genericReq.split(','))
+{
+    if(!assignGrp.contains(req.split("#@#")[1]))
+    {
+        assignGrp.add(req.split("#@#")[1])
+    }
+}
+
+ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser()
+def issueFactory = ComponentAccessor.getIssueFactory()
+def subTaskManager = ComponentAccessor.getSubTaskManager()
+def constantManager = ComponentAccessor.getConstantsManager()
+def issueManager = ComponentAccessor.getIssueManager()
+def BUCF = issue.getCustomFieldValue(ComponentAccessor.customFieldManager.getCustomFieldObject("customfield_11387")); 
+//log.warn(BUCF)
+def SBUCF = issue.getCustomFieldValue(ComponentAccessor.customFieldManager.getCustomFieldObject("customfield_11388"));
+//log.warn(SBUCF)
+//def BUCF = issue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObjectsByName("Requestor's Business Unit")[0]);
+//def SBUCF = issue.getCustomFieldValue(ComponentAccessor.getCustomFieldManager().getCustomFieldObjectsByName("Requestor's Sub-Business Unit")[0]);
+def actionitemCf = ComponentAccessor.customFieldManager.getCustomFieldObjectsByName("Action Items")[0];
+def requestorforCF = ComponentAccessor.customFieldManager.getCustomFieldObject("customfield_12710")
+def AssNamecf = ComponentAccessor.customFieldManager.getCustomFieldObject("customfield_12707")
+def hiringmanger = ComponentAccessor.customFieldManager.getCustomFieldObject("customfield_12708")
+def linkedIssueCustomFieldValue = issue.getCustomFieldValue(AssNamecf)
+def linkedIssueCustomFieldValuehrm = issue.getCustomFieldValue(hiringmanger)
+
+//log.warn("to see:" + roleTitleObj.getName())
+for(grp in assignGrp)
+{  
+    def actionItems = new StringBuffer();//new ArrayList()
+    for(req in genericReq.split(','))
+    {
+         if(req.split("#@#")[1] == grp)
+        {
+            actionItems.append(req.split("#@#")[0] + "\n")
+        } 
+    }
+    log.warn("Action Items:" + actionItems + " for the group:" +   grp)
+   
+    //def objects1 = iqlFacade.findObjectsByIQLAndSchema(8, "\"Group Name\" = \"" + grp +"\"")  
+   
+    
+   MutableIssue newSubTask = issueFactory.getIssue()
+    newSubTask.setSummary("RBA Fullfillment Task for " + grp)
+     if(grp == "Network Ops � Voice")
+    {
+         newSubTask.setSummary("RBA Fullfillment Task for Network Ops – Voice")
+     }                       
+    newSubTask.setDescription("More info... "  + "\n" +
+                "RBA Business Unit: " +  BUCF[0].getName() + "\n" + 
+                "RBA Sub Business Unit:" +  SBUCF[0].getName() + "\n" +
+                "Role Title :" + insightObj[0].getName()) 
+    
+     newSubTask.setParentObject(issue)
+    newSubTask.setReporter(issue.reporter)
+    newSubTask.setCustomFieldValue(actionitemCf, actionItems.toString())
+    newSubTask.setCustomFieldValue(AssNamecf, linkedIssueCustomFieldValue)
+    //newSubTask.setCustomFieldValue(hiringmanger, linkedIssueCustomFieldValuehrm)
+     newSubTask.setPriorityId(constantManager.getPriorities().find {
+        it.getName() == "Priority 4"
+        
+    }.id)
+    newSubTask.setProjectObject(issue.getProjectObject())
+    newSubTask.setIssueTypeId(constantManager.getAllIssueTypeObjects().find{
+        it.getName() == "Role Based Access Subtask"
+    }.id)
+    // Add any other fields you want for the newly created sub task
+    log.debug("New issue ${newSubTask}")
+    Map newIssueParams = ["issue" : newSubTask] as Map;
+    issueManager.createIssueObject(user, newIssueParams)
+    subTaskManager.createSubTaskIssueLink(issue, newSubTask, user)
+    
+    log.info "Issue with summary ${newSubTask.summary} created" 
+}
